@@ -1,0 +1,94 @@
+FROM centos:7
+MAINTAINER yilian
+
+ADD nginx-1.12.0.tar.gz /usr/local/src
+RUN yum -y update
+RUN yum -y install wget gcc gcc-c++ make pcre-devel vim libxml2 libxml2-devel openssl openssl-devel bzip2 bzip2-devel libcurl libcurl-devel libjpeg libjpeg-devel libpng libpng-devel freetype freetype-devel gmp gmp-devel libmcrypt libmcrypt-devel readline readline-devel libxslt libxslt-devel zlib zlib-devel glibc glibc-devel glib2 glib2-devel ncurses curl gdbm-devel db4-devel libXpm-devel libX11-devel gd-devel gmp-devel expat-devel xmlrpc-c xmlrpc-c-devel libicu-devel libmcrypt-devel libmemcached-devel
+RUN useradd -s /sbin/nologin nginx
+WORKDIR /usr/local/src/nginx-1.12.0
+RUN ./configure --prefix=/usr/local/nginx --user=nginx --group=nginx --with-http_ssl_module --with-http_stub_status_module && make && make install
+ADD nginx.conf.tar.gz /usr/local/nginx/conf
+ADD vhost.tar.gz /usr/local/nginx/conf
+ADD www.tar.gz /
+ENV PATH /usr/local/nginx/sbin:$PATH
+EXPOSE 80
+
+ADD php-7.1.0.tar.gz /usr/local/src
+WORKDIR /usr/local/src/php-7.1.0
+RUN ./configure \
+--prefix=/usr/local/php \
+--with-config-file-path=/etc \
+--enable-fpm \
+--enable-inline-optimization \
+--disable-debug \
+--disable-rpath \
+--enable-shared  \
+--enable-soap \
+--with-libxml-dir \
+--with-xmlrpc \
+--with-openssl \
+--with-mcrypt \
+--with-mhash \
+--with-pcre-regex \
+--with-sqlite3 \
+--with-zlib \
+--enable-bcmath \
+--with-iconv \
+--with-bz2 \
+--enable-calendar \
+--with-curl \
+--with-cdb \
+--enable-dom \
+--enable-exif \
+--enable-fileinfo \
+--enable-filter \
+--with-pcre-dir \
+--enable-ftp \
+--with-gd \
+--with-openssl-dir \
+--with-jpeg-dir \
+--with-png-dir \
+--with-zlib-dir  \
+--with-freetype-dir \
+--enable-gd-native-ttf \
+--enable-gd-jis-conv \
+--with-gettext \
+--with-gmp \
+--with-mhash \
+--enable-json \
+--enable-mbstring \
+--enable-mbregex \
+--enable-mbregex-backtrack \
+--with-libmbfl \
+--with-onig \
+--enable-pdo \
+--with-mysqli=mysqlnd \
+--with-pdo-mysql=mysqlnd \
+--with-zlib-dir \
+--with-pdo-sqlite \
+--with-readline \
+--enable-session \
+--enable-shmop \
+--enable-simplexml \
+--enable-sockets  \
+--enable-sysvmsg \
+--enable-sysvsem \
+--enable-sysvshm \
+--enable-wddx \
+--with-libxml-dir \
+--with-xsl \
+--enable-zip \
+--enable-mysqlnd-compression-support \
+--with-pear \
+--enable-opcache && make && make install
+ENV PATH /usr/local/php/bin:$PATH
+
+RUN cp cp php.ini-production /etc/php.ini
+RUN cp /usr/local/php/etc/php-fpm.conf.default /usr/local/php/etc/php-fpm.conf
+RUN cp /usr/local/php/etc/php-fpm.d/www.conf.default /usr/local/php/etc/php-fpm.d/www.conf
+RUN cp sapi/fpm/init.d.php-fpm /etc/init.d/php-fpm
+RUN chmod +x /etc/init.d/php-fpm
+
+COPY init.sh /www
+RUN chmod +x /www/init.sh
+CMD ["/www/init.sh"]
